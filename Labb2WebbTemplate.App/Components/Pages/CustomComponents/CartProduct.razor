@@ -1,0 +1,40 @@
+@using Labb2WebbTemplate.Shared.Dtos.ProductDtos
+@using Labb2WebbTemplate.App.Components.Pages.Store
+@using Labb2WebbTemplate.App.Models
+@using Labb2WebbTemplate.App.Services
+
+@inject CartService CartService
+
+<MudIconButton Icon="@Icons.Material.Filled.Close" @onclick="() => Close?.Invoke(Product.Id)" Size="Size.Small" />
+<MudText>@Product.Name</MudText>
+<div class="d-flex justify-center-between">
+    
+    <MudNumericField Immediate="true" Class="test" Style="width: 100px;" T="int" Min="1" @bind-Value="Product.Amount"/>
+    <MudText Typo="Typo.h6" GutterBottom="true">@(Product.Price * Product.Amount)$</MudText>
+</div>
+<MudDivider />
+
+
+@code {
+
+    [Parameter, EditorRequired] 
+    public CartProductModel Product { get; set; } = null!;
+
+    [Parameter, EditorRequired] 
+    public Func<int, Task> Close { get; set; } = null!;
+
+    [Parameter, EditorRequired] 
+    public Func<Task> UpdateTotal { get; set; } = null!;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Product.AmountHasChanged = Product_AmountHasChanged;
+    }
+
+    private async Task Product_AmountHasChanged(int id, int amount)
+    {
+        await CartService.ChangeAmountInProduct(id, amount);
+        await UpdateTotal();
+    }
+
+}

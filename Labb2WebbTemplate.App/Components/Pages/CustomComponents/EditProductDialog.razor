@@ -1,0 +1,159 @@
+﻿@using Labb2WebbTemplate.Shared.Dtos.ProductDtos
+@using System.ComponentModel.DataAnnotations
+@using System.Net
+@using Labb2WebbTemplate.App.Services
+
+@inject ISnackbar Snackbar
+@inject ProductService ProductService
+
+<MudDialog Style="width: 400px">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            Edit Product
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="_success">
+            <MudTextField @bind-Value="Name" Label="Product Name" V
+                          Required="true"
+                          RequiredError="Description is required"
+                          alidation="@(new StringLengthAttribute(500) { ErrorMessage = "Description cant be longer than 500" })"
+                          Counter="500"
+                          Immediate="true"/>
+            <MudNumericField T="double" Label="Price"
+                             @bind-Value="Price"
+                             Required="true"
+                             RequiredError="Price is required"
+                             Immediate="true"/>
+            <CategoryField @ref="_categoryField" Value="@Product?.Category.Name"></CategoryField>
+            <MudTextField T="string" Label="Description" Lines="3" Variant="Variant.Outlined"
+                          @bind-Value="Description"
+                          Required="true"
+                          RequiredError="Description is required"
+                          Validation="@(new StringLengthAttribute(500) { ErrorMessage = "Description cant be longer than 500" })"
+                          Counter="500"
+                          Immediate="true"/>
+            
+            <MudSwitch @bind-Value="Discontinued" Color="Color.Error" Label="Discontinued"/>
+            
+            <MudFileUpload T="IBrowserFile" FilesChanged="UploadImage" Style="width: 30%">
+                <ButtonTemplate >
+                    <MudButton HtmlTag="label"
+                               FullWidth="false"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Image"
+                               for="@context.Id">
+                        Upload Image
+                    </MudButton>
+                    @if (_image is not null)
+                    {
+                        <MudText Typo="Typo.body1" Class="mt-5">@_image.Name</MudText>
+                    }
+                </ButtonTemplate>
+            </MudFileUpload>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+    <MudButton Disabled="!_success" Color="Color.Success" OnClick="Confirm">Confirm</MudButton>
+    </DialogActions>
+
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public ProductResponse? Product { get; set; }
+
+    public string Name { get; set; } = string.Empty;
+    public double Price { get; set; }
+    public string Category { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public bool Discontinued { get; set; }
+    
+    private IBrowserFile? _image;
+    
+    private MudForm _form;
+    private CategoryField _categoryField;
+    
+    private bool _success;
+    
+
+    protected override void OnParametersSet()
+    {
+        if (Product is not null)
+        {
+            Name = Product.Name;
+            Price = Product.Price;
+            Category = Product.Category.Name;
+            Description = Product.Description;
+            Discontinued = Product.IsDiscontinued;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+
+        }
+
+        if (Product is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task Confirm()
+    {
+    
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            throw new ApplicationException("Form was submitted when values was invalid");
+        }
+
+        var id = Product?.Id ?? 0; 
+        var newProduct = new ProductRequest(Name, Description, Price, _categoryField.GetCategoryId(), Id: id, IsDiscontinued: Discontinued);
+        var responseMessage = Product is null 
+            ? await ProductService.AddProduct(newProduct)
+            : await ProductService.UpdateProduct(newProduct);
+
+
+        if (responseMessage.StatusCode != HttpStatusCode.OK)
+        {
+            Snackbar.Add("An unexpected server Error has occured. please try again later", Severity.Error);
+            return;
+        }
+            
+        if (_image is not null)
+        {
+            var productId = await responseMessage.Content.ReadFromJsonAsync<int>();
+            
+            await ProductService.AddProductImage(productId, _image);
+        }
+        
+        Snackbar.Add("Success", Severity.Success);
+        MudDialog.Close(DialogResult.Ok(200));
+    }
+    
+    private void UploadImage(IBrowserFile file)
+    {
+        if (file.Size > 512000L)
+        {
+            Snackbar.Add("the image size is to large", Severity.Error);
+            return;
+        }
+        _image = file;
+    }
+
+
+}

@@ -1,0 +1,30 @@
+﻿@page "/Admin/ChangeProductStock"
+@using Labb2WebbTemplate.App.Services
+@using Labb2WebbTemplate.Shared.Dtos.ProductDtos
+@inject ProductService ProductService
+
+<AdminAuthorized ShowNotAuthorizedMessage="true">
+    <div class="ml-15 mr-15">
+        <ProductsTable Products="ProductsList" StockHasChanged="UpdateProductList"/>
+    </div>
+</AdminAuthorized>
+
+
+@code
+{
+    public IEnumerable<ProductResponse> ProductsList { get; set; } = [];
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await UpdateProductList();
+        }
+    }
+
+    private async Task UpdateProductList()
+    {
+        ProductsList = await ProductService.GetProducts();
+        StateHasChanged();
+    }
+
+}

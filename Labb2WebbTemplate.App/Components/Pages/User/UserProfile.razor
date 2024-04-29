@@ -1,0 +1,66 @@
+﻿@using Labb2WebbTemplate.Shared.Dtos.UserDtos
+@using Labb2WebbTemplate.App.Services
+@using Labb2WebbTemplate.App.Components.Pages.Admin
+@using Labb2WebbTemplate.Api.Endpoints.User
+
+@inject UserService UserService
+@page "/User/Profile/{Id}"
+
+@if (PageUser is null)
+{
+    return;
+}
+
+<MudText Typo="Typo.h5">Name</MudText>
+<MudText Typo="Typo.body1" >@PageUser.FirstName @PageUser.LastName</MudText>
+<MudText Typo="Typo.h5">Email</MudText>
+<MudText Typo="Typo.body1" >@PageUser.Email</MudText>
+<MudText Typo="Typo.h5">Phone</MudText>
+<MudText Typo="Typo.body1">@PageUser.Phone</MudText>
+<MudText Typo="Typo.h5">Address</MudText>
+<MudText Typo="Typo.body1">@PageUser.Address</MudText>
+
+@if (IsAuthorizedUser)
+{
+    <MudButton Variant="Variant.Filled" Color="Color.Warning" OnClick="Callback">Edit</MudButton>
+
+    <div hidden="@_editorIsHidden">
+        <UserForm User="PageUser" UserAddress="PageUserAddress" />
+    </div>
+    
+    <UserOrdersList UserId="int.Parse(Id)"></UserOrdersList>
+}
+
+
+@code {
+    [Parameter]
+    public string Id { get; set; }
+    private UserResponse? PageUser { get; set; }
+    private AddressResponse? PageUserAddress { get; set; }
+    private bool IsAuthorizedUser { get; set; }
+
+    private bool _editorIsHidden = true;
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+        var id = int.Parse(Id);
+        
+        PageUser = await UserService.GetByIdAsync(id);
+        PageUserAddress = await UserService.GetUserAddress(id);
+        var clientUser = await UserService.GetAuthorizedUser();
+        
+        IsAuthorizedUser = (clientUser.Id == id);
+        StateHasChanged();
+    }
+
+    private void Callback()
+    {
+        _editorIsHidden = !_editorIsHidden;
+    }
+
+}

@@ -1,0 +1,26 @@
+﻿
+
+.text-center {
+    text-align: center;
+}
+
+.sidebar-left {
+    float: left;
+    width: 20%;
+}
+.categories-main {
+    float: right;
+    width: 80%;
+}
+
+.floating-action-button
+{
+    
+    position: fixed;
+    right: 3rem;
+    bottom:3rem;
+}
+
+.mud-center-numeric-input input {
+    text-align: center;
+}

@@ -1,0 +1,7 @@
+﻿<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Main" type="CompoundRunConfigurationType">
+    <toRun name="Labb2WebbTemplate.Api: http" type="LaunchSettings" />
+    <toRun name="Labb2WebbTemplate.App: http" type="LaunchSettings" />
+    <method v="2" />
+  </configuration>
+</component>

@@ -1,0 +1,48 @@
+﻿@using Labb2WebbTemplate.Api.Endpoints.Orders
+@using Labb2WebbTemplate.App.Services
+@using System.Security.Claims
+@inject OrderService OrderService
+
+<MudText Typo="Typo.h5">Orders</MudText>
+@if (UserOrdersLists is null)
+{
+    <MudProgressCircular />
+    return;
+}
+<MudExpansionPanels>
+    @foreach (var order in UserOrdersLists)
+    {
+        <MudExpansionPanel Style="background-color:azure" Text="@order.Date.ToString()">
+            <MudTable Items="order.Products">
+                <HeaderContent>
+                    <MudTh>Products</MudTh>
+                    <MudTh>Amount</MudTh>
+                    <MudTh>Price</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Products">@context.Name</MudTd>
+                    <MudTd DataLabel="Amount">@context.Amount</MudTd>
+                    <MudTd DataLabel="Price">@((context.Price * context.Amount).ToString("C"))</MudTd>
+                </RowTemplate>
+
+            </MudTable>
+        </MudExpansionPanel>
+    }
+</MudExpansionPanels>
+
+@code {
+    
+    [Parameter]
+    public int UserId { get; set; }
+    private IEnumerable<OrderResponse>? UserOrdersLists { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+        UserOrdersLists = await OrderService.GetUserOrders(UserId);
+        StateHasChanged();
+    }
+}

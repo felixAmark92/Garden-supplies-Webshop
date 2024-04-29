@@ -1,0 +1,39 @@
+﻿@using Labb2WebbTemplate.App.Components.Pages.Admin
+@using Labb2WebbTemplate.App.Services
+@inject UserService UserService
+
+@if (!_pageIsLoaded)
+{
+    <MudProgressCircular />
+    return;
+}
+@if (ChildContent is not null && _userIsAdmin)
+{
+    @ChildContent
+}
+else if (ShowNotAuthorizedMessage)
+{
+    <MudText Typo="Typo.body2" Color="Color.Error">You do not have permission to view this page!</MudText>
+}
+
+@code {
+    private bool _userIsAdmin;
+    private bool _pageIsLoaded;
+    
+    [Parameter] 
+    public RenderFragment? ChildContent  { get; set; }
+
+    [Parameter] 
+    public bool ShowNotAuthorizedMessage { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+         _userIsAdmin = await UserService.UserIsAdmin();
+         _pageIsLoaded = true;
+         StateHasChanged();
+    }
+}

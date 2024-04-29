@@ -1,0 +1,36 @@
+﻿@using Labb2WebbTemplate.App.Services
+@using Labb2WebbTemplate.Shared.Dtos.UserDtos
+@using System.Net.Http.Headers
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+
+@inject UserService UserService
+@inject ProtectedLocalStorage  LocalStorage
+@inject NavigationManager NavigationManager
+
+<MudForm>
+    <MudTextField T="string" Label="Email"
+                  @bind-Value="EmailInput"  />
+    
+    <MudTextField T="string" Label="Password" 
+                  @bind-Value="PasswordInput" 
+                  InputType="InputType.Password" />
+    
+    <MudButton @onclick="SignIn">Sing in</MudButton>
+</MudForm>
+
+@code {
+
+    public string EmailInput { get; set; } = string.Empty;
+    public string PasswordInput { get; set; } = string.Empty;
+
+    private async Task SignIn()
+    {
+        var user = new AuthenticateUserRequest(EmailInput, PasswordInput);
+        var token = await UserService.AuthenticateUser(user);
+        
+        await LocalStorage.SetAsync("token", token);
+        Js.Log(token);
+        
+        NavigationManager.NavigateTo("/Admin", forceLoad:true);
+    }
+}

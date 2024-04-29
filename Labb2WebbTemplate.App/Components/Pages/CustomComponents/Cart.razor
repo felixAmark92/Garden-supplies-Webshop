@@ -1,0 +1,106 @@
+@using Labb2WebbTemplate.Shared.Dtos.ProductDtos
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using Labb2WebbTemplate.App.Models
+@using Labb2WebbTemplate.App.Services
+@using Labb2WebbTemplate.Api.Endpoints.Orders
+
+@inject ProtectedLocalStorage LocalStorage  
+@inject CartService CartService
+@inject UserService UserService
+@inject OrderService OrderService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<MudFab Color="Color.Tertiary" Class="floating-action-button" @onclick="OpenCartDrawer" StartIcon="@Icons.Material.Filled.ShoppingCart"/>
+<div >
+    
+</div>
+<MudDrawer
+    Width="500px"
+    Class="fixed" 
+    Style="height: 80vb" 
+    @bind-Open="@_open" 
+    Anchor="Anchor.End" 
+    Elevation="1" 
+    Variant="@DrawerVariant.Temporary">
+    <MudDrawerHeader>
+        <MudText Typo="Typo.h6">Cart</MudText>
+    </MudDrawerHeader>
+    <MudNavMenu  >
+        @foreach (var product in _cart)
+        {
+            <CartProduct Product="product" Close="RemoveFromCart" UpdateTotal="UpdateTotal" />
+        }
+    </MudNavMenu>
+    <MudPaper Class="fixed d-flex flex-column-reverse " Style="bottom: 0;  width: 500px; height: 20vb">
+        <MudButton  Variant="Variant.Filled" Style="width: 100%; height: 80px" Color="Color.Tertiary" @onclick="Purchase">Purchase</MudButton>
+        <MudText Typo="Typo.h5">Total: @TotalPrice$</MudText>
+    </MudPaper>
+    
+  
+</MudDrawer>
+
+
+@code {
+    private bool _open;
+    private List<CartProductModel> _cart = new();
+    
+    private double TotalPrice => _cart.Select(p => p.Price * p.Amount).Sum();
+
+
+    private async Task OpenCartDrawer()
+    {
+        _open = true;
+        _cart = await CartService.GetCartAsync();
+    }
+
+
+    private async Task RemoveFromCart(int arg)
+    {
+        await CartService.RemoveFromCart(arg, _cart);
+        StateHasChanged();
+    }
+
+    private async Task UpdateTotal()
+    {
+        StateHasChanged();
+    }
+
+    private async Task Purchase()
+    {
+        if (!await UserService.UserIsAuthorized())
+        {
+            Snackbar.Add("Register or login to finish your order");
+            _open = false;
+            NavigationManager.NavigateTo("/Register");
+            return;
+            
+        }
+        var user = await UserService.GetAuthorizedUser();
+
+        if (_cart.Count == 0)
+        {
+            Snackbar.Add("Your cart is empty", Severity.Error);
+            return;
+        }
+        
+        var order =
+            new OrderRequest(
+                user.Id,
+                _cart.Select(p => 
+                    new OrderProductRequest(p.Id, p.Amount))
+            );
+
+        var response = await OrderService.ConfirmOrder(order);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Your Order has been registered", Severity.Success);
+            await CartService.ClearCart();
+            _cart = new List<CartProductModel>();
+            _open = false;
+            StateHasChanged();
+        }
+    }
+
+}

@@ -1,0 +1,14 @@
+﻿@using Labb2WebbTemplate.Shared.Dtos.ProductDtos
+
+<MudExpansionPanel  Text="@Product.Name">
+    <div>
+        <MudText>Price: @Product.Price</MudText>
+        <MudText>Description: @Product.Description</MudText>
+        <MudText>Stock: @Product.Stock</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Warning">Edit</MudButton>
+    </div>
+</MudExpansionPanel>
+
+@code {
+    [Parameter] public required ProductResponse Product { get; set; }
+}

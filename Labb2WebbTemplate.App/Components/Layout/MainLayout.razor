@@ -1,0 +1,90 @@
+﻿@using Labb2WebbTemplate.App.Services
+@using Labb2WebbTemplate.Shared.Dtos.ProductDtos
+@using Labb2WebbTemplate.Shared.Dtos.UserDtos
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inherits LayoutComponentBase
+
+@inject UserService UserService
+@inject ProtectedLocalStorage LocalStorage
+@inject NavigationManager NavigationManager
+
+<MudProviders/>
+<div class="page">
+    <MudAppBar Color="Color.Success" Fixed="false">
+
+        <MudNavLink Href="/"><CompanyLogo /></MudNavLink>
+        <MudNavLink Href="/Store/Products/">Products</MudNavLink>
+        @if (Authorized && User is not null)
+        {
+            <AdminAuthorized>
+                <MudNavLink Href="/Admin">Admin</MudNavLink>
+            </AdminAuthorized>
+            <MudMenu>
+                <ActivatorContent>
+                    <MudAvatar Color="Color.Secondary">@User?.FirstName[0]</MudAvatar>
+                </ActivatorContent>
+                <ChildContent>
+                    <MudMenuItem Href=@($"/User/Profile/{User.Id}")>
+                        Profile
+                    </MudMenuItem>
+                    <MudMenuItem>Theme</MudMenuItem>
+                    <MudMenuItem>Usage</MudMenuItem>
+                    <MudMenuItem @onclick="SignOut">Sign Out</MudMenuItem>
+                </ChildContent>
+            </MudMenu>
+            <MudIcon Icon="@Icons.Material.Filled.Settings"></MudIcon>
+        }
+        else
+        {
+            <MudNavLink Href="/Register">Register</MudNavLink>
+            <MudNavLink Href="#">Log in</MudNavLink>
+        }
+    </MudAppBar>
+
+    <main>
+        <article class="content px-4">
+            @Body
+            <Cart />
+            
+        </article>
+    </main>
+</div>
+
+
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code
+{
+
+
+    
+    private bool Authorized { get; set; } = false;
+    public UserResponse? User { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Authorized = await UserService.UserIsAuthorized();
+
+            if (Authorized)
+            {
+                User = await UserService.GetAuthorizedUser();
+            }
+            StateHasChanged();
+        }
+    }
+
+    private  async Task SignOut()
+    {
+        await LocalStorage.DeleteAsync("token");
+        NavigationManager.NavigateTo("/", forceLoad:true);
+    }
+
+
+}

@@ -1,0 +1,20 @@
+﻿@page "/Admin"
+
+<AdminAuthorized ShowNotAuthorizedMessage="true">
+    <h3>Admin</h3>
+    <MudList>
+        <MudListItem>
+            <MudLink Href="/Admin/users">Users</MudLink>
+        </MudListItem>
+        <MudListItem>
+            <MudLink Href="/Admin/ChangeProductStock">Manage product stock</MudLink>
+        </MudListItem>
+        <MudListItem>
+            <MudLink Href="/Admin/EditProducts">Edit products</MudLink>
+        </MudListItem>
+    </MudList>
+</AdminAuthorized>
+
+@code {
+        
+}

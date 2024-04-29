@@ -1,0 +1,37 @@
+﻿@using Labb2WebbTemplate.App.Services
+@inject ProductService ProductService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        Are you sure you want to delete product?
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton StartIcon="@Icons.Material.Filled.Delete" Variant="Variant.Filled" Color="Color.Error" OnClick="DeleteProduct">Delete</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter]
+    public int ProductId { get; set; }
+
+    private async Task DeleteProduct()
+    {
+        var result = await ProductService.DeleteProduct(ProductId);
+
+        if (result.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Product has been deleted", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Unknown error", Severity.Error);
+        }
+        
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+    void Cancel() => MudDialog.Cancel();
+}

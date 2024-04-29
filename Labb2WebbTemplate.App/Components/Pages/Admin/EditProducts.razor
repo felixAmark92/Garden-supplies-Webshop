@@ -1,0 +1,82 @@
+﻿@page "/Admin/EditProducts"
+@using Labb2WebbTemplate.Shared.Dtos.UserDtos
+@using Labb2WebbTemplate.Shared.Dtos.ProductDtos
+@using Labb2WebbTemplate.App.Services
+@using System.Net.Http.Json
+@inject ProductService ProductService
+@inject IDialogService DialogService
+
+<AdminAuthorized>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenNewDialog">Add new product</MudButton>
+    <MudDataGrid
+        T="ProductResponse"
+        Items="Products" EditTrigger="DataGridEditTrigger.OnRowClick"
+        EditMode="DataGridEditMode.Form">
+        <Columns>
+            <PropertyColumn Property=" x => x.Id" Title="Id" IsEditable="false"/>
+            <PropertyColumn Property=" x => x.Name" Title="Product"/>
+            <PropertyColumn Property=" x => x.Category.Name" Title="Category"/>
+            <PropertyColumn Property="@(x => x.Price)" Title="Price"/>
+            <TemplateColumn CellClass="">
+                <CellTemplate>
+                    <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Outlined.Edit" OnClick="() => OpenEditDialog(context.Item)"/>
+                </CellTemplate>
+
+            </TemplateColumn>
+            <TemplateColumn CellClass=" justify-end">
+                <CellTemplate>
+                    <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Outlined.Delete" OnClick="() => DeleteProduct(context.Item.Id)"/>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="ProductResponse" PageSizeOptions=@(new int[] { 10, 20, 50 })/>
+        </PagerContent>
+    </MudDataGrid>
+</AdminAuthorized>
+
+@code {
+
+    public IEnumerable<ProductResponse>? Products { get; set; }
+    private List<string> _events = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        Products = await ProductService.GetProducts();
+        StateHasChanged();
+    }
+    
+    // void StartedEditingItem(ProductResponse product)
+    // {
+    //     _events.Insert(0, $"Event = StartedEditingItem, Data = {System.Text.Json.JsonSerializer.Serialize(product)}");
+    // }
+
+    private async Task OpenEditDialog(ProductResponse product)
+    {
+        var test = new DialogParameters<EditProductDialog>{{x => x.Product, product}};
+        var dialog = await DialogService.ShowAsync<EditProductDialog>("test", test);
+        var result =  await dialog.Result;
+    }
+
+    private async Task OpenNewDialog()
+    {
+        var dialog = await DialogService.ShowAsync<EditProductDialog>();
+
+        var result = await dialog.Result;
+    }
+
+    private async Task DeleteProduct(int productId)
+    {
+        var options = new DialogParameters<DeleteProductDialog> 
+            { { x => x.ProductId, productId } };
+        
+        var dialog = await DialogService.ShowAsync<DeleteProductDialog>("Delete Product", options);
+        var result = await dialog.Result;
+    }
+
+}

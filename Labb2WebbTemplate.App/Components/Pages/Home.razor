@@ -1,0 +1,37 @@
+﻿@using Labb2WebbTemplate.App.Services
+
+@inject UserService UserService
+
+@page "/"
+
+<PageTitle>Home</PageTitle>
+
+@if (Loading)
+{
+    <p>Loading..</p>
+    return;
+}
+
+@if (Authorized)
+{
+    <p>You are already logged in!</p>
+    return;
+}
+
+<Login />
+
+@code
+{
+    public bool Loading { get; set; } = true;
+    public bool Authorized { get; set; }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Authorized = await UserService.UserIsAuthorized();
+            Loading = false;
+            StateHasChanged();
+        }
+    }
+}

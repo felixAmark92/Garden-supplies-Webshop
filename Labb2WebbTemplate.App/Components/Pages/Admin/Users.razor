@@ -1,0 +1,48 @@
+﻿@page "/Admin/Users"
+@using Labb2WebbTemplate.Shared.Dtos.UserDtos
+@using Labb2WebbTemplate.App.Services
+@inject UserService UserService
+<AdminAuthorized ShowNotAuthorizedMessage="true">
+    <MudPaper Width="40rem" >
+        <MudList >
+            <MudListSubheader>
+                Users
+            </MudListSubheader>
+            @if (AllUsers is not null)
+            {
+                foreach (var user in AllUsers)
+                {
+                    <MudDivider/>
+                    <MudListItem >
+                        <div Class="d-flex justify-space-between">
+                            <p style="text-align: center">@user.Email </p>
+                            
+                            <MudButton Color="Color.Primary" Variant="Variant.Filled">Expand</MudButton>
+                        </div>
+                        
+                    </MudListItem>
+                }
+            }
+            else
+            {
+                <MudProgressCircular Indeterminate="true" Color="Color.Primary"/>
+            }
+        </MudList>
+    </MudPaper>
+
+</AdminAuthorized>
+
+
+@code {
+
+    public IEnumerable<UserResponse>? AllUsers { get; set; } 
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            AllUsers = await UserService.GetAllAsync();
+            StateHasChanged();
+        }
+    }
+}

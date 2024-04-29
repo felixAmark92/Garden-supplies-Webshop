@@ -1,0 +1,45 @@
+@using Labb2WebbTemplate.Shared.Dtos.ProductDtos
+<MudTable Items="Products" Bordered="true" Striped="true">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Products</MudText>
+        <MudSpacer/>
+        <MudTextField T="string" Placeholder="Search" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"/>
+    </ToolBarContent>
+    <ColGroup>
+        <col />
+        <col />
+        <col />
+        <col />
+        <col style="width: 170px;"/>
+    </ColGroup>
+    <HeaderContent>
+        <MudTh >Name</MudTh>
+        <MudTh>Price</MudTh>
+        <MudTh>Category</MudTh>
+        <MudTh >Stock</MudTh>
+        <MudTh >Add to stock</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Name">@context.Name</MudTd>
+        <MudTd DataLabel="Price">@context.Price</MudTd>
+        <MudTd DataLabel="Category">@context.Category.Name</MudTd>
+        <MudTd DataLabel="Stock">@context.Stock</MudTd>
+        <MudTd DataLabel="Add to Stock" Class="d-flex">
+            <AddToStock ProductId="context.Id" StockHasChanged="StockHasChanged"/>
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+
+@code
+{
+    [Parameter, EditorRequired] 
+    public IEnumerable<ProductResponse> Products { get; set; } = null!;
+
+    [Parameter, EditorRequired] 
+    public Func<Task> StockHasChanged { get; set; } = null!;
+
+}

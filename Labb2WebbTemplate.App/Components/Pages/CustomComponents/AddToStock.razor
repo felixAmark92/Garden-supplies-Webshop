@@ -1,0 +1,24 @@
+@using Labb2WebbTemplate.App.Services
+@inject ProductService ProductService
+
+<MudNumericField @bind-Value="Amount"  />
+<MudButton Variant="Variant.Filled" Color="Color.Dark" Style="height: fit-content" Size="Size.Small" OnClick="AddAmountToStock">Add</MudButton>
+
+@code {
+
+    [Parameter, EditorRequired]
+    public int ProductId { get; set; }
+
+    [Parameter, EditorRequired] 
+    public Func<Task> StockHasChanged { get; set; } = null!;
+
+    public int Amount { get; set; }
+
+    private async Task AddAmountToStock()
+    {
+        await ProductService.AddToStock(Amount, ProductId);
+        await StockHasChanged();
+
+    }
+
+}

@@ -1,0 +1,93 @@
+﻿@using Labb2WebbTemplate.App.Services
+@inject CategoryService CategoryService
+
+
+<MudAutocomplete @ref="_mudAutocomplete" Class="mb-10" T="string" Label="Category"
+                 @bind-Value="Value"
+                 SearchFunc="SearchCategories"
+                 Required="true"
+                 RequiredError="Category is required"
+                 ResetValueOnEmptyText="true"
+                 CoerceText="true" CoerceValue="true"
+                 Validation="@(new Func<string, bool>(CategoryIsValid))"/>
+
+@if (!_validCategory)
+{
+    <div class="d-flex justify-space-between">
+        <MudText Color="Color.Error">Category does not exist do you want to create it?</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="AddCategory">Add Category</MudButton>
+    </div>
+}
+
+@code {
+    [Parameter] public string Value { get; set; }
+    private MudAutocomplete<string> _mudAutocomplete = null!;
+    
+    private Dictionary<string, int> _categories = null!;
+    private bool _validCategory = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UpdateCategories();
+    }
+    
+    
+    private async Task UpdateCategories()
+    {
+        var cat = await CategoryService.GetCategories();
+        _categories = cat.Select(c => 
+            new KeyValuePair<string, int>(c.Name, c.Id)).ToDictionary();
+    }
+    
+    private bool CategoryIsValid(string? arg)
+    {
+        if (arg is null)
+        {
+            return false;
+        }
+
+        if (_categories is null)
+        {
+            return true;
+        }
+        
+        var isValid = _categories?.ContainsKey(arg);
+
+
+        if (isValid != null)
+        {
+            _validCategory = isValid.Value;
+            StateHasChanged();
+            return (bool)isValid;
+        }
+
+        return false;
+    }
+
+    
+    private async Task<IEnumerable<string>> SearchCategories(string? arg)
+    {
+        if (arg is null)
+        {
+            return _categories.Select(c => c.Key);
+        }
+
+        return _categories
+            .Where(c => 
+                c.Key.Contains(arg, StringComparison.InvariantCultureIgnoreCase))
+            .Select(c => 
+                c.Key);
+    }
+    private async Task AddCategory()
+    {
+        await CategoryService.AddCategory(Value);
+        await UpdateCategories();
+        await _mudAutocomplete.Validate();
+    }
+
+    public int GetCategoryId()
+    {
+        return _categories[Value];
+    }
+    
+}

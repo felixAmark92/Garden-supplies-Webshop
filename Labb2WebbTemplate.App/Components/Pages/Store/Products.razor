@@ -1,0 +1,110 @@
+@page "/Store/Products/"
+@using Labb2WebbTemplate.App.Services
+@using Labb2WebbTemplate.Shared.Dtos.CategoryDtos
+@using Labb2WebbTemplate.Shared.Dtos.ProductDtos
+
+@inject CategoryService CategoryService
+@inject ProductService ProductService
+@inject IJSRuntime JsRuntime
+
+<MudPaper Class="py-3 sidebar-left" Elevation="0">
+    <MudNavMenu>
+        <MudText Typo="Typo.h6" Class="px-4">Categories</MudText>
+        
+        @foreach (var category in Categories)
+        {
+            <MudNavLink OnClick="() => { UpdateProducts(category.Key);}">@category.Value.Name</MudNavLink>
+        }
+
+    </MudNavMenu>
+</MudPaper>
+
+<div class="categories-main mt-10">
+    
+    <MudText Typo="Typo.h4" class="mb-10">@Category</MudText>
+    <MudTextField  @bind-Value="Search" 
+                   Label="Search" 
+                   Variant="Variant.Outlined" 
+                   Adornment="Adornment.End" 
+                   AdornmentIcon="@Icons.Material.Filled.Search" 
+                   Immediate="true"  />
+    
+    <MudGrid Spacing="5" Justify="Justify.Center" >
+        @foreach (var product in ProductList)
+        {
+            <MudItem xs="12" sm="4" lg="3" >
+                <MudLink Href="@($"/Store/Product/{product.Id}")">
+                    <MudCard >
+                        <MudCardMedia Tag="product.Id" 
+                                      Image="@( 
+                                             product.HasImage 
+                                                 ? $"http://localhost:5106/product/image/{product.Id}" 
+                                                 : "Images/no-image.png")" />
+                        <MudCardContent>
+                            <MudText>@product.Name</MudText>
+                            <MudText Typo="Typo.body2">@product.Price $</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudLink>
+            </MudItem>
+        }
+    </MudGrid>
+
+</div>
+
+
+
+@code
+{
+    private string _search = string.Empty;
+    [Parameter] public string Category { get; set; } = string.Empty;
+
+    public string Search
+    {
+        get => _search;
+        set
+        {
+            _search = value;
+            UpdateProducts(Category);
+        }
+    }
+
+    public IDictionary<string, CategoryResponse> Categories { get; set; } = new Dictionary<string, CategoryResponse>();
+
+    public IEnumerable<ProductResponse> ProductList { get; set; } = [];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+        var categories = await CategoryService.GetCategories();
+
+        Categories = categories.Select(c => 
+                new KeyValuePair<string,CategoryResponse>(c.Name, c))
+            .ToDictionary();
+        
+        await UpdateProducts("All");
+    }
+
+    private async Task UpdateProducts(string category)
+    {
+        if (string.Equals(category, "All", StringComparison.OrdinalIgnoreCase))
+        {
+            var list = await ProductService.GetProducts();
+
+            ProductList = list.Where(p => p.Name.Contains(Search, StringComparison.InvariantCultureIgnoreCase));
+        }
+        else
+        {
+            var list = await ProductService.GetProductsByCategory(Categories[category].Id);
+            ProductList = list.Where(p => p.Name.Contains(Search, StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        Category = category;
+        
+
+        StateHasChanged();
+    }
+}

@@ -1,0 +1,284 @@
+@using System.ComponentModel.DataAnnotations
+@using System.Net
+@using Labb2WebbTemplate.Api.Endpoints.User
+@using Labb2WebbTemplate.App.Services
+@using Labb2WebbTemplate.Shared.Dtos.AddressDtos
+@using Labb2WebbTemplate.Shared.Dtos.CityDtos
+@using Labb2WebbTemplate.Shared.Dtos.UserDtos
+@using Labb2WebbTemplate.Shared.Enums
+
+@inject RegionService RegionService
+@inject CityService CityService
+@inject UserService UserService
+
+<MudForm  @bind-IsValid="_isValid">
+    <MudTextField T="string" Label="First name"
+                  @bind-Value="FirstName"
+                  Required="true"
+                  RequiredError="First name is required"
+                  Validation="@(new StringLengthAttribute(50) { ErrorMessage = "First Name cannot be longer than 50 " })"
+                  Immediate="true"/>
+
+    <MudTextField T="string" Label="Last name"
+                  @bind-Value="LastName"
+                  Required="true"
+                  RequiredError="First name is required"
+                  Validation="@(new StringLengthAttribute(50) { ErrorMessage = "Last name cannot be longer than 50 " })"
+                  Immediate="true"/>
+
+    <MudTextField T="string" Label="Email"
+                  @bind-Value="Email"
+                  Required="true"
+                  RequiredError="Email is required"
+                  Validation="@(new Func<string, Task<string>>(ValidateEmail))"/>
+    
+    <MudTextField  T="string" Label="Phone"
+                   @bind-Value="Phone"
+                   InputType="InputType.Telephone"
+                   Validation="@(new PhoneAttribute(){ErrorMessage = "Needs to be in phone format"})"
+                   Required="true"
+                   RequiredError="Phone is required"/>
+
+    <MudTextField T="string" Label="Address"
+                  @bind-Value="Address"
+                  Required="true"
+                  RequiredError="Address is required!"
+                  Validation="@(new StringLengthAttribute(50) { ErrorMessage = "Address cant be longer than 50" })"
+                  Immediate="true"/>
+
+    <MudTextField T="string" Label="Postal code"
+                  @bind-Value="PostalCode"
+                  Required="true"
+                  RequiredError="Address is required!"
+                  Validation="@(new Func<string, IEnumerable<string>>(PostalCodeValidation))"/>
+
+    <MudAutocomplete T="string" Label="City"
+                     @bind-Value="City"
+                     SearchFunc="SearchFunc"
+                     Validation="@(new Func<string, string>(ValidateCity))"
+                     Required="true"
+                     RequiredError="City is required"
+                     ResetValueOnEmptyText="true"
+                     CoerceText="true"
+                     CoerceValue="true"/>
+
+    <MudTextField T="string" Label="Region"
+                  @bind-Value="Region"
+                  Validation="@(new StringLengthAttribute(50) { ErrorMessage = "Region cant be longer than 50" })"
+                  Required="true"
+                  RequiredError="region is required"
+                  Immediate="true"/>
+    
+    <MudTextField T="string" Label="Password" HelperText="Confirm the changes by entering your password"
+                  @bind-Value="Password"
+                  InputType="InputType.Password"
+                  Required="true"
+                  RequiredError="Password is required!"
+                  Immediate="true"/>
+    
+    
+    
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" 
+               Disabled="!_isValid" @onclick="Submit" >Submit</MudButton>
+</MudForm>
+
+@code {
+
+    [Parameter, EditorRequired] 
+    public UserResponse User { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public AddressResponse UserAddress { get; set; } = null!;
+    
+    private bool _isValid;
+    private IDictionary<string, CityResponse> _cityResponses  = null!;
+    private IDictionary<string, int> _regionResponses  = null!;
+
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string Address { get; set; } = string.Empty;
+    public string PostalCode { get; set; } = string.Empty;
+    public string City { get; set; } = string.Empty;
+    public string Region { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        FirstName = User.FirstName;
+        LastName = User.LastName;
+        Email = User.Email;
+        Phone = User.Phone;
+        Address = UserAddress.Address;
+        PostalCode = UserAddress.PostalCode;
+        City = UserAddress.City.Name;
+        Region = UserAddress.City.Region.Name;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _cityResponses = await GetCityDict();
+        _regionResponses = await GetRegionDict();
+    }
+
+    private async Task<string> ValidateEmail(string email)
+    {
+
+        if (email.Length > 50)
+        {
+            return "Email cant be longer than 50";
+        }
+        
+        var test = new EmailAddressAttribute();
+        if (!test.IsValid(email))
+        {
+            return "Input is not a valid Email";
+        }
+
+        var emailIsRegistered = await UserService.EmailIsRegistered(email);
+        if (emailIsRegistered)
+        {
+            return "Email is already registered";
+        }
+
+        return null!;
+    }
+    
+    private IEnumerable<string> PostalCodeValidation(string arg)
+    {
+        if (arg.Length != 5)
+        {
+            yield return "postal code length needs to be 5";
+        }
+
+        if (arg.Any(c => !char.IsDigit(c)))
+        {
+            yield return "postal code can only contain digits";
+        }
+    }
+
+
+    private async Task<IEnumerable<string>> SearchFunc(string arg)
+    {
+        if (string.IsNullOrEmpty(arg))
+        {
+            return _cityResponses.Select(c => c.Key);
+        }
+
+        return _cityResponses
+            .Where(c => 
+                c.Key.Contains(arg, StringComparison.CurrentCultureIgnoreCase))
+            .Select(c => c.Key);
+    }
+
+    private string ValidateCity(string cityInput)
+    {
+        if (string.IsNullOrEmpty(cityInput))
+        {
+            return null!;
+        }
+        if (cityInput.Length > 50)
+        {
+            return "City cant be longer than 50";
+        }
+
+        if (_cityResponses.TryGetValue(cityInput, out var cityResponse))
+        {
+            Region = cityResponse.Region.Name;
+        }
+        return null!;
+    }
+
+    private async Task Submit()
+    {
+        var passwordIsCorrect = await UserService.AuthenticateUser(new AuthenticateUserRequest(User.Email, Password));
+
+        if (passwordIsCorrect == "NaN")
+        {
+            //TODO: User feedback
+            Js.Log("Wrong password!");
+            return;
+        }
+        
+        if (!_isValid)
+        {
+            throw new ApplicationException("Submit method was called when form was invalid");
+        }
+        
+
+        if (!_regionResponses.ContainsKey(Region))
+        {
+            var response = await RegionService.AddAsync(Region);
+
+            if (response != HttpStatusCode.OK)
+            {
+                throw new HttpRequestException($"unexpected Http status code: {response}");
+            }
+
+            _regionResponses =  await GetRegionDict();
+        }
+
+        var regionId = _regionResponses[Region];
+        
+        
+        if (!_cityResponses.ContainsKey(City))
+        {
+            var cityRequest = new CityRequest(City, regionId);
+            var response = await CityService.AddAsync(cityRequest);
+            if (response != HttpStatusCode.OK)
+            {
+                throw new HttpRequestException($"unexpected Http status code: {response}");
+            }
+
+            _cityResponses = await GetCityDict();
+        }
+        var cityId = _cityResponses[City].Id;
+
+
+        var userRequest = new UserRequest(
+            FirstName, 
+            LastName, 
+            Email, 
+            Phone, 
+            Password, 
+            new AddressRequest(
+                cityId, 
+                Address, 
+                PostalCode),
+            IsAdmin: await UserService.UserIsAdmin(),
+            Id:User.Id);
+
+        var status =  await UserService.UpdateAsync(userRequest);
+
+        if (status != HttpStatusCode.OK)
+        {
+            throw new HttpRequestException("not expected http response");
+        }
+        Js.Log("Success!");
+    }
+
+    private async Task<Dictionary<string, int>> GetRegionDict()
+    {
+        var regionResponses = await RegionService.GetAllAsync();
+        
+        return regionResponses
+            .Select(r => new KeyValuePair<string, int>(r.Name, r.Id))
+            .ToDictionary();
+    }
+
+    private async Task<Dictionary<string, CityResponse>> GetCityDict()
+    {
+        var cityResponses = await CityService.GetAllAsync();
+        
+        return cityResponses
+            .Select(c => new KeyValuePair<string, CityResponse>(c.Name, c))
+            .ToDictionary();
+    }
+    
+}
