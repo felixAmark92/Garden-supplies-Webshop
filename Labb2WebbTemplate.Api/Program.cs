@@ -16,7 +16,7 @@ builder.Services
     .AddJWTBearerAuth("fg2gfsuoyq74ogfoqGS7o8GFOyHEHL#UWO/#(ODDHEILWYOFGyrgfghKGHJKGhjkgYKGyKGRKgyKUG")
     .AddAuthorization()
     .AddFastEndpoints()
-    .AddScoped<UnitOfWork>() //TODO: singleton or scoped?
+    .AddScoped<UnitOfWork>()
     .AddDbContext<StoreDbContext>(
     options =>
     {
