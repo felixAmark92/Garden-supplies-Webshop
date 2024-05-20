@@ -9,6 +9,8 @@
 @inject RegionService RegionService
 @inject CityService CityService
 @inject UserService UserService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
 
 @page "/Register"
 
@@ -272,7 +274,13 @@
         {
             throw new HttpRequestException("not expected http response");
         }
+        
+        
         Js.Log("Success!");
+
+        Snackbar.Add("You have been registered", Severity.Success);
+        
+        Navigation.NavigateTo("/");
     }
 
     private async Task<Dictionary<string, int>> GetRegionDict()
